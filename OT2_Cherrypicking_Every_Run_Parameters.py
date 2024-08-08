@@ -3,76 +3,16 @@ from io import StringIO
 from opentrons import protocol_api
 from dataclasses import dataclass
 from typing import List, Set, Union
-from opentrons.protocols.parameters.types import CSVParameter
 
 metadata = {
-    "name": "Cherrypicking Flex Every Run Parameters",
+    "name": "Cherrypicking OT-2 Parameters",
     "author": "Josh McVey",
     "description": "Original author Krishna Soma <krishna.soma@opentrons.com> \n CSV Template at https://docs.google.com/spreadsheets/d/14ctuhLQebPd7Q6TPAuprTjgQFuHeHKykg18x_xtMuW0/edit?usp=sharing",
 }
 requirements = {
-    "robotType": "Flex",
+    "robotType": "OT-2",
     "apiLevel": "2.20",
 }
-
-def add_parameters(parameters):
-    parameters.add_str(
-        display_name="Pipette Type & Tiprack",
-        variable_name="pipette_and_tips",
-        choices=[
-            {
-                "display_name": "50 s w/ standard tips",
-                "value": "flex_1channel_50,opentrons_flex_96_tiprack_50ul",
-            },
-            {
-                "display_name": "50 s w/ filter tips",
-                "value": "flex_1channel_50,opentrons_flex_96_filtertiprack_50ul",
-            },
-            {
-                "display_name": "1000 s w/ standard 200 tips",
-                "value": "flex_1channel_1000,opentrons_flex_96_tiprack_200ul",
-            },
-            {
-                "display_name": "1000 s w/ filter 200 tips",
-                "value": "flex_1channel_1000,opentrons_flex_96_filtertiprack_200ul",
-            },
-            {
-                "display_name": "1000 s w/ standard 1000 tips",
-                "value": "flex_1channel_1000,opentrons_flex_96_tiprack_1000ul",
-            },
-            {
-                "display_name": "1000 s w/ filter 1000 tips",
-                "value": "flex_1channel_1000,opentrons_flex_96_filtertiprack_1000ul",
-            },
-        ],
-        default="flex_1channel_50,opentrons_flex_96_tiprack_50ul",
-        description="Select the pipette and tip type",
-    )
-    parameters.add_str(
-        display_name="Pipette Mount",
-        variable_name="pipette_mount",
-        choices=[
-            {"display_name": "left", "value": "left"},
-            {"display_name": "right", "value": "right"},
-        ],
-        default="left",
-        description="Select the pipette mount.",
-    )
-    parameters.add_str(
-        display_name="Tip Reuse",
-        variable_name="tip_reuse",
-        choices=[
-            {"display_name": "never", "value": "never"},
-            {"display_name": "always", "value": "always"},
-        ],
-        default="always",
-        description="Select the tip reuse.",
-    )
-    parameters.add_csv_file(
-        variable_name="cherrypicking_sequence",
-        display_name="Cherrypicking Sequence",
-        description="Table of labware, wells, and volumes to transfer.",
-    )
 
 
 @dataclass
@@ -114,6 +54,7 @@ class LabwareSlot:
             return NotImplemented
         return (self.labware, self.slot) == (other.labware, other.slot)
 
+
 def read_transfers_from_list(
     data: List[List[Union[str, int, float]]]
 ) -> List[Transfer]:
@@ -141,42 +82,65 @@ def get_unique_labware_slots(transfers: List[Transfer]) -> Set[LabwareSlot]:
     unique_labware_slots = set()
     for transfer in transfers:
         unique_labware_slots.add(
-            LabwareSlot(transfer.source_labware, transfer.source_slot)
+            LabwareSlot(labware=transfer.source_labware, slot=transfer.source_slot)
         )
         unique_labware_slots.add(
-            LabwareSlot(transfer.destination_labware, transfer.destination_slot)
+            LabwareSlot(
+                labware=transfer.destination_labware, slot=transfer.destination_slot
+            )
         )
     return unique_labware_slots
 
 
-FLEX_DECK_SLOTS = [
-    "A1",
-    "A2",
-    "A3",
-    "B1",
-    "B2",
-    "B3",
-    "C1",
-    "C2",
-    "C3",
-    "D1",
-    "D2",
-    "D3",
+def add_parameters(parameters):
+    parameters.add_str(
+        display_name="Pipette Mount",
+        variable_name="pipette_mount",
+        choices=[
+            {"display_name": "left", "value": "left"},
+            {"display_name": "right", "value": "right"},
+        ],
+        default="right",
+        description="Select the pipette mount.",
+    )
+    parameters.add_str(
+        display_name="Tip Reuse",
+        variable_name="tip_reuse",
+        choices=[
+            {"display_name": "never", "value": "never"},
+            {"display_name": "always", "value": "always"},
+        ],
+        default="always",
+        description="Select the tip reuse.",
+    )
+    parameters.add_csv_file(
+        variable_name="cherrypicking_sequence",
+        display_name="Cherrypicking Sequence",
+        description="Table of labware, wells, and volumes to transfer.",
+    )
+
+
+OT2_DECK_LOCATIONS = [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
 ]
 
 
 def run(ctx: protocol_api.ProtocolContext):
 
     # Get the values from the RTPs
-    pipette_type = ctx.params.pipette_and_tips.split(",")[0]
-    tip_type = ctx.params.pipette_and_tips.split(",")[1]
     pipette_mount = ctx.params.pipette_mount
     tip_reuse = ctx.params.tip_reuse
     cherrypicking_sequence = ctx.params.cherrypicking_sequence.parse_as_csv()
-
-    # load trash
-    TRASH_LOCATION = "A3"
-    trash = ctx.load_trash_bin(TRASH_LOCATION)
 
     # read the transfer information from the csv
     transfers = read_transfers_from_list(cherrypicking_sequence)
@@ -189,19 +153,19 @@ def run(ctx: protocol_api.ProtocolContext):
     # load tipracks
     tipracks = []
 
-    for slot in FLEX_DECK_SLOTS:
-        if not ctx.deck[slot] and slot != TRASH_LOCATION:
-            tipracks.append(ctx.load_labware(tip_type, slot))
+    for slot in OT2_DECK_LOCATIONS:
+        if not ctx.deck[slot]:
+            tipracks.append(ctx.load_labware("opentrons_96_tiprack_300ul", slot))
 
     # load pipette
-    pipette = ctx.load_instrument(pipette_type, pipette_mount, tip_racks=tipracks)
+    pipette = ctx.load_instrument("p300_single_gen2", pipette_mount, tip_racks=tipracks)
 
     tip_count = 0
-    tip_max = len(tipracks * 96)
+    tip_max = len(tipracks) * 96
 
     def pick_up():
         nonlocal tip_count
-        if tip_count == tip_max:
+        if tip_count >= tip_max:
             ctx.pause("Please refill tipracks before resuming.")
             pipette.reset_tipracks()
             tip_count = 0
@@ -222,7 +186,9 @@ def run(ctx: protocol_api.ProtocolContext):
         ]
         if tip_reuse == "always":
             pick_up()
-        pipette.transfer(float(transfer.volume_ul), source, destination, new_tip="never")
+        pipette.transfer(
+            float(transfer.volume_ul), source, destination, new_tip="never"
+        )
         if tip_reuse == "always":
             pipette.drop_tip()
     if pipette.has_tip:

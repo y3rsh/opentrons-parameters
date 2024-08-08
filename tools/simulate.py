@@ -1,6 +1,6 @@
 import subprocess
 import sys
-from your_paths import PROTOCOL_FILE_PATH
+from tools.your_paths import PROTOCOL_FILE_PATH
 
 
 # TODO Labware definitions Path
