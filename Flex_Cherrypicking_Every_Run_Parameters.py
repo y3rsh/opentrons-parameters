@@ -1,9 +1,7 @@
-import csv
-from io import StringIO
 from opentrons import protocol_api
 from dataclasses import dataclass
 from typing import List, Set, Union
-from opentrons.protocols.parameters.types import CSVParameter
+
 
 metadata = {
     "name": "Cherrypicking Flex Every Run Parameters",
@@ -117,7 +115,7 @@ class LabwareSlot:
 
 
 def read_transfers_from_list(
-    data: List[List[Union[str, int, float]]]
+    data: List[List[Union[str, int, float]]],
 ) -> List[Transfer]:
     headers = data[0]
     transfers = []
@@ -168,7 +166,6 @@ FLEX_DECK_SLOTS = [
 
 
 def run(ctx: protocol_api.ProtocolContext):
-
     # Get the values from the RTPs
     pipette_type = ctx.params.pipette_and_tips.split(",")[0]
     tip_type = ctx.params.pipette_and_tips.split(",")[1]
