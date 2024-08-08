@@ -1,0 +1,4 @@
+source_labware,source_slot,source_well,source_height_above_bottom_mm,destination_labware,destination_slot,destination_well,volume_μl
+agilent_1_reservoir_290ml,D1,A1,1,nest_96_wellplate_100ul_pcr_full_skirt,D2,A11,1
+nest_12_reservoir_15ml,C1,A1,1,nest_96_wellplate_2ml_deep,C2,A5,3
+nest_1_reservoir_195ml,C3,A1,1,nest_96_wellplate_2ml_deep,C2,H12,7
