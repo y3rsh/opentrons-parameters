@@ -1,12 +1,11 @@
-import csv
-from io import StringIO
-from opentrons import protocol_api
 from dataclasses import dataclass
-from typing import List, Set, Union
+from pydantic import BaseModel, validator, ValidationError
+from typing import List, Set
+from opentrons import protocol_api
 import pprint
 
 metadata = {
-    "name": "Flex Liquid Example",
+    "name": "Flex Liquid Example with Pydantic",
     "author": "Josh McVey",
 }
 requirements = {
@@ -15,8 +14,8 @@ requirements = {
 }
 
 
-@dataclass
-class LiquidDestination:
+# Pydantic bundled in the App/Robot is version 1.10.17 as of 8/9/2024
+class LiquidDestination(BaseModel):
     labware_load_name: str
     slot: str
     wells: Set[str]
@@ -25,20 +24,112 @@ class LiquidDestination:
     display_color: str
     volume: float
 
+    @validator("volume")
+    def volume_value(cls, value):
+        if value is None:
+            raise ValueError("Volume cannot be None")
+        if not (0 < value <= 100.00):
+            raise ValueError(
+                "Volume must be greater than 0 and less than or equal to 100.00"
+            )
+        return value
+
+    @validator("wells", pre=True)
+    def split_wells(cls, value):
+        if not value:
+            raise ValueError("Wells cannot be None")
+        if isinstance(value, str):
+            return set(value.split(";"))
+        return value
+
+    @validator("labware_load_name", "slot", "name", "description", "display_color")
+    def no_empty_strings(cls, value):
+        if not value:
+            raise ValueError("Field cannot be None")
+        if value.strip() == "":
+            raise ValueError("Field cannot be empty string")
+        return value
+
     @property
     def key(self) -> str:
+        if not self.labware_load_name or not self.slot:
+            raise ValueError("Labware name and slot must be defined")
         return f"{self.labware_load_name}_{self.slot}"
 
 
-class LiquidDestinations:
-    ctx: protocol_api.ProtocolContext
+data = [
+    [
+        "labware_load_name",
+        "slot",
+        "name",
+        "description",
+        "display_color",
+        "volume",
+        "wells",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "H₂O",
+        "Water, 100 µL",
+        "#A3C8C9",
+        "100.0",
+        "A1;B1;C1",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "1 M NaCl",
+        "Sodium Chloride, 1 M",
+        "#4FC601",
+        "100",
+        "A3;B3;C3",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "EtOH",
+        "Ethanol, 70%",
+        "#0086ED",
+        "100.0",
+        "F1;G1",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "Tris-HCl",
+        "Tris Hydrochloride, 1 M",
+        "#A079BF",
+        "50.0",
+        "A10;A11",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "PBS",
+        "Phosphate Buffered Saline, 1X",
+        "#C2FF99",
+        "100.0",
+        "B10;B11",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "BSA",
+        "Bovine Serum Albumin, 1 mg/mL",
+        "#1CE6FF",
+        "100.0",
+        "C10;C11",
+    ],
+]
 
-    def __init__(self, ctx) -> None:
-        self.ctx = ctx
+
+class LiquidDestinations:
+
+    def __init__(self) -> None:
         self.destinations: List[LiquidDestination] = []
 
     def add_destination(self, destination: LiquidDestination) -> None:
-
         # has this destination already been added?
         liquids_in_same_slot = [
             d for d in self.destinations if d.key == destination.key
@@ -58,18 +149,14 @@ class LiquidDestinations:
     def get_destinations(self) -> List[LiquidDestination]:
         return self.destinations
 
-    def parse_list_of_lists(
-        self, data: List[List[str]], well_delimiter: str = ";"
-    ) -> None:
+    def parse_list_of_lists(self, data: List[List[str]]) -> None:
         if not data or not isinstance(data, list) or len(data) < 2:
             data_error = (
                 "Data must be a non-empty list of lists with at least two rows."
             )
-            self.ctx.comment(data_error)
             raise ValueError(data_error)
 
         headers = data[0]
-        # note these match the properties of this class
         expected_headers = {
             "labware_load_name",
             "slot",
@@ -91,47 +178,18 @@ class LiquidDestinations:
                 )
             if missing_headers:
                 error_message += f"Missing headers: {', '.join(missing_headers)}."
-            self.ctx.comment(error_message)
             raise ValueError(error_message)
 
         # Process each row of data
-        # Fail fast on the first row missing fields or that has empty fields
-        CHECK_MISSING_FIELDS = True  # less values than expected
-        CHECK_EMPTY_FIELDS = True  # None or empty string
         for index, row in enumerate(data[1:], start=1):
-            if CHECK_MISSING_FIELDS:
-                if len(row) != len(expected_headers):
-                    error = f"There are missing fields in data row: {index}, line {index+1} of the CSV. The row data is: {row}"
-                    self.ctx.comment(error)
-                    raise ValueError(error)
-
-            if CHECK_EMPTY_FIELDS:
-                for value in row:
-                    if value is None or value.strip() == "":
-                        error = f"There are empty fields in data row: {index}, line {index+1} of the CSV. The row data is: {row}"
-                        self.ctx.comment(error)
-                        raise ValueError(error)
-
-            # Create a dictionary for the row using zip
             row_dict = dict(zip(headers, row))
-            wells = set(row_dict["wells"].split(well_delimiter))
-            try:
-                volume = float(row_dict["volume"])
-            except ValueError:
-                error = f"Invalid volume value: {row_dict['volume']} in row: {row_dict}"
-                self.ctx.comment(error)
-                raise ValueError(error)
 
-            destination = LiquidDestination(
-                labware_load_name=row_dict["labware_load_name"],
-                slot=row_dict["slot"],
-                wells=wells,
-                name=row_dict["name"],
-                description=row_dict["description"],
-                display_color=row_dict["display_color"],
-                volume=volume,
-            )
-            self.add_destination(destination)
+            try:
+                destination = LiquidDestination.parse_obj(row_dict)
+                self.add_destination(destination)
+            except ValidationError as e:
+                error = f"Validation error in row {index + 1}: {e.json()}"
+                raise ValueError(error)
 
 
 @dataclass(frozen=True)
@@ -155,31 +213,14 @@ def get_unique_labware_slots(liquids: List[LiquidDestination]) -> Set[LabwareSlo
     return unique_labware_slots
 
 
-def add_parameters(parameters):
-    parameters.add_csv_file(
-        variable_name="liquids",
-        display_name="liquid definitions",
-        description="Table of liquids",
-    )
+def main():
+    liquid_destinations = LiquidDestinations()
+    liquid_destinations.parse_list_of_lists(data)
+    liquids = liquid_destinations.get_destinations()
+    pprint.pprint(liquids)
+    unique_labware_slots = get_unique_labware_slots(liquids)
+    pprint.pprint(unique_labware_slots)
 
 
-def run(ctx: protocol_api.ProtocolContext):
-
-    # Get the values from the RTPs
-    liquids = ctx.params.liquids.parse_as_csv()
-    ctx.comment(pprint.pformat(liquids))
-    liquid_destinations = LiquidDestinations(ctx)
-    liquid_destinations.parse_list_of_lists(liquids)
-    labwares = get_unique_labware_slots(liquid_destinations.get_destinations())
-    for labware in labwares:
-        ctx.load_labware(labware.labware, labware.slot)
-    for destination in liquid_destinations.get_destinations():
-        liquid = ctx.define_liquid(
-            name=destination.name,
-            description=destination.description,
-            display_color=destination.display_color,
-        )
-        for well in destination.wells:
-            ctx.deck[destination.slot].wells_by_name()[well].load_liquid(
-                liquid=liquid, volume=destination.volume
-            )
+if __name__ == "__main__":
+    main()
