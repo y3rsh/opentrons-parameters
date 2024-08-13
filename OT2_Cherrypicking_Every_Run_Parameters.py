@@ -14,35 +14,53 @@ requirements = {
     "apiLevel": "2.20",
 }
 
+# We record the headers of the CSV file here so that we can validate that the CSV file we upload matches the expected format.
+HEADERS = [
+    "source_labware",
+    "source_slot",
+    "source_well",
+    "source_height_above_bottom_mm",
+    "destination_labware",
+    "destination_slot",
+    "destination_well",
+    "volume_μl",
+]
+
+
+def validate_data_rows(data_rows):
+    """Process each row of data. Fail fast on the first row missing fields or that has empty fields"""
+    for index, row in enumerate(data_rows, start=1):
+        if len(row) != len(HEADERS):
+            error = f"There are missing fields in data row: {index}, line {index+1} of the CSV. The row data is: {row}"
+            raise ValueError(error)
+
+        for value in row:
+            if value is None or value.strip() == "":
+                error = f"There are empty fields in data row: {index}, line {index+1} of the CSV. The row data is: {row}"
+                raise ValueError(error)
+
 
 @dataclass
 class Transfer:
+    """This class describes 1 row of CSV data.
+    Using a dataclass allows us to use named attributes to access the data.
+    """
+
     source_labware: str
     source_slot: str
-    _source_well: str
+    source_well: str
     source_height_above_bottom_mm: float
     destination_labware: str
     destination_slot: str
-    _destination_well: str
+    destination_well: str
     volume_ul: float
-
-    @property
-    def source_well(self):
-        return self.format_well(self._source_well)
-
-    @property
-    def destination_well(self):
-        return self.format_well(self._destination_well)
-
-    @staticmethod
-    def format_well(well):
-        letter = well[0]
-        number = well[1:]
-        return letter.upper() + str(int(number))
 
 
 @dataclass(frozen=True)
 class LabwareSlot:
+    """This class defines labware slots so that we can use python's set."
+    This makes it easier to ensure we only load each labware once."""
+
     labware: str
     slot: str
 
@@ -56,38 +74,47 @@ class LabwareSlot:
 
 
 def read_transfers_from_list(
-    data: List[List[Union[str, int, float]]]
+    data: List[List[Union[str, int, float]]],
 ) -> List[Transfer]:
+    """This function reads a list of lists and returns a list of Transfer objects"""
+
+    # the first row of our data is the headers
     headers = data[0]
+    assert headers == HEADERS, f"Expected headers: {HEADERS}, but got: {headers}"
+    # ignore the first row, as it is the headers
+    data_rows = data[1:]
+    validate_data_rows(data_rows)
+    # Iterate over the rest of the rows and create Transfer objects
+    # We will iterate over to take action in the protocol.
     transfers = []
+
     for row in data[1:]:
-        row_dict = dict(zip(headers, row))
+        # CSV data is inherently ordered so we can use the index to access the correct value
+        # Processing the row data into a Transfer object allows us to use named attributes to access the data
         transfer = Transfer(
-            source_labware=str(row_dict["source_labware"]),
-            source_slot=str(row_dict["source_slot"]),
-            _source_well=str(row_dict["source_well"]),
-            source_height_above_bottom_mm=float(
-                row_dict["source_height_above_bottom_mm"]
-            ),
-            destination_labware=str(row_dict["destination_labware"]),
-            destination_slot=str(row_dict["destination_slot"]),
-            _destination_well=str(row_dict["destination_well"]),
-            volume_ul=float(row_dict["volume_μl"]),
+            source_labware=str(row[0]),
+            source_slot=str(row[1]),
+            source_well=str(row[2]),
+            source_height_above_bottom_mm=float(row[3]),
+            destination_labware=str(row[4]),
+            destination_slot=str(row[5]),
+            destination_well=str(row[6]),
+            volume_ul=float(row[7]),
         )
         transfers.append(transfer)
     return transfers
 
 
 def get_unique_labware_slots(transfers: List[Transfer]) -> Set[LabwareSlot]:
+    """This function takes a list of Transfer objects and returns a set of unique LabwareSlot objects.
+    The purpose of this function is to ensure that we only load each labware once."""
     unique_labware_slots = set()
     for transfer in transfers:
         unique_labware_slots.add(
-            LabwareSlot(labware=transfer.source_labware, slot=transfer.source_slot)
+            LabwareSlot(transfer.source_labware, transfer.source_slot)
         )
         unique_labware_slots.add(
-            LabwareSlot(
-                labware=transfer.destination_labware, slot=transfer.destination_slot
-            )
+            LabwareSlot(transfer.destination_labware, transfer.destination_slot)
         )
     return unique_labware_slots
 
