@@ -1,3 +1,4 @@
+This runs just fine against my 8.0.0-alpha
 from dataclasses import dataclass
 from pydantic import BaseModel, validator, ValidationError
 from typing import List, Set
