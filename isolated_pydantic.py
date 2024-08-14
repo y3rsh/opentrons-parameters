@@ -1,19 +1,11 @@
-This runs just fine against my 8.0.0-alpha
+# This runs just fine against my 8.0.0-alpha.0 bundled python
+# /Applications/Opentrons.app/Contents/Resources/python/bin/python3 isolated_pydantic.py
+# but when I try to analyze the protocol I get an issue with the validator
 from dataclasses import dataclass
 from pydantic import BaseModel, validator, ValidationError
 from typing import List, Set
 from opentrons import protocol_api
 import pprint
-
-metadata = {
-    "name": "Flex Liquid Example with Pydantic",
-    "author": "Josh McVey",
-}
-requirements = {
-    "robotType": "OT-2",
-    "apiLevel": "2.20",
-}
-
 
 # Pydantic bundled in the App/Robot is version 1.10.17 as of 8/9/2024
 class LiquidDestination(BaseModel):
