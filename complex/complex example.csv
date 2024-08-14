@@ -1,0 +1,4 @@
+0_liq_class,1_asp_rate,2_dis_rate,3_delay_mode,4_asp_zoffset,5_dis_zoffset,6_blowout_zoffset,7_prewet (Yes or No)?,8_prewet_rep,9_slow_withdrawl_asp (Yes or No)?,10_postmix (Yes or No)?,11_postmix_vol,12_postmix_rep,13_slow_withdrawl_dis (Yes or No)?,14_blowout_mode,15_touch_tip(Yes or No)?,16_t_height,17_air_gap (Yes or No)?
+1st,0.8,0.8,No,1,3,-2,Yes,3,No,No,0,0,Yes,False ,Yes,-2,No
+2nd,0.6,0.6,both,1,2,-6,No,0,Yes,Yes,120,1,No,viscous,No,-4,Yes
+3rd,0.2,0.2,Yes,1,0.5,-3,Yes,1,Yes,Yes,50,2,Yes,default,Yes,-1,Yes

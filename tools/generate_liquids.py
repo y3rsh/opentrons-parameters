@@ -166,19 +166,21 @@ class LiquidDestinations:
     def get_destinations(self) -> List[LiquidDestination]:
         return self.destinations
 
-    def parse_list_of_lists(self, data: List[List[str]], well_delimiter: str = ';') -> None:
+    def parse_list_of_lists(
+        self, data: List[List[str]], well_delimiter: str = ";"
+    ) -> None:
         headers = data[0]
         for row in data[1:]:
             row_dict = dict(zip(headers, row))
-            wells = set(row_dict['wells'].split(well_delimiter))
+            wells = set(row_dict["wells"].split(well_delimiter))
             destination = LiquidDestination(
-                labware_load_name=row_dict['labware_load_name'],
-                slot=row_dict['slot'],
+                labware_load_name=row_dict["labware_load_name"],
+                slot=row_dict["slot"],
                 wells=wells,
-                name=row_dict['name'],
-                description=row_dict['description'],
-                display_color=row_dict['display_color'],
-                volume=float(row_dict['volume'])
+                name=row_dict["name"],
+                description=row_dict["description"],
+                display_color=row_dict["display_color"],
+                volume=float(row_dict["volume"]),
             )
             self.add_destination(destination)
 
@@ -189,18 +191,83 @@ emoji = "🪄✨➡️🥳⬅️😭🤣😂😊❓▶️😝❤️😍😒👌�
 
 color_palette = ColorPalette()
 example_data = [
-    ["labware_load_name", "slot", "name", "description", "display_color", "volume", "wells"],
-    ["nest_96_wellplate_100ul_pcr_full_skirt", "1", "H₂O", "Water, 100 µL", color_palette.use_random_color(), "100.0", "A1;B1;C1"],
-    ["nest_96_wellplate_100ul_pcr_full_skirt", "1", "1 M NaCl", "Sodium Chloride, 1 M", color_palette.use_random_color(), "100", "A3;B3;C3"],
-    ["nest_96_wellplate_100ul_pcr_full_skirt", "1", "EtOH", "Ethanol, 70%", color_palette.use_random_color(), "100.0", "F1;G1"],
-    ["nest_96_wellplate_100ul_pcr_full_skirt", "1", "Tris-HCl", "Tris Hydrochloride, 1 M", color_palette.use_random_color(), "50.0", "A10;A11"],
-    ["nest_96_wellplate_100ul_pcr_full_skirt", "1", "PBS", "Phosphate Buffered Saline, 1X", color_palette.use_random_color(), "100.0", "B10;B11"],
-    ["nest_96_wellplate_100ul_pcr_full_skirt", "1", "BSA", "Bovine Serum Albumin, 1 mg/mL", color_palette.use_random_color(), "100.0", "C10;C11"],
+    [
+        "labware_load_name",
+        "slot",
+        "name",
+        "description",
+        "display_color",
+        "volume",
+        "wells",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "H₂O",
+        "Water, 100 µL",
+        color_palette.use_random_color(),
+        "100.0",
+        "A1;B1;C1",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "1 M NaCl",
+        "Sodium Chloride, 1 M",
+        color_palette.use_random_color(),
+        "100",
+        "A3;B3;C3",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "EtOH",
+        "Ethanol, 70%",
+        color_palette.use_random_color(),
+        "100.0",
+        "F1;G1",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "Tris-HCl",
+        "Tris Hydrochloride, 1 M",
+        color_palette.use_random_color(),
+        "50.0",
+        "A10;A11",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "PBS",
+        "Phosphate Buffered Saline, 1X",
+        color_palette.use_random_color(),
+        "100.0",
+        "B10;B11",
+    ],
+    [
+        "nest_96_wellplate_100ul_pcr_full_skirt",
+        "1",
+        "BSA",
+        "Bovine Serum Albumin, 1 mg/mL",
+        color_palette.use_random_color(),
+        "100.0",
+        "C10;C11",
+    ],
 ]
+
 
 def generate_96_rows() -> List[List[str]]:
     data = [
-        ["labware_load_name", "slot", "name", "description", "display_color", "volume", "wells"]
+        [
+            "labware_load_name",
+            "slot",
+            "name",
+            "description",
+            "display_color",
+            "volume",
+            "wells",
+        ]
     ]
     rows, columns = 8, 12
     # chr(65 + r): Converts row index to corresponding letter (A-H) using ASCII values.
@@ -214,18 +281,30 @@ def generate_96_rows() -> List[List[str]]:
         display_color = color_palette.use_random_color()
         volume = "20"
         wells = well_names[i]
-        row = ["nest_96_wellplate_100ul_pcr_full_skirt", "1", name, description, display_color, volume, wells]
+        row = [
+            "nest_96_wellplate_100ul_pcr_full_skirt",
+            "1",
+            name,
+            description,
+            display_color,
+            volume,
+            wells,
+        ]
         data.append(row)
 
     return data
 
+
 def generate_csv(data: List[List[str]], filename: str) -> None:
-    with open(filename, mode='w', newline='\n', encoding='utf-8') as file:
+    with open(filename, mode="w", newline="\n", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerows(data)
 
+
 def main():
-    generate_csv(example_data, 'example_liquids.csv')
-    generate_csv(generate_96_rows(), '96_wellplate_liquids.csv')
-if __name__ == '__main__':
+    generate_csv(example_data, "example_liquids.csv")
+    generate_csv(generate_96_rows(), "96_wellplate_liquids.csv")
+
+
+if __name__ == "__main__":
     main()

@@ -1,0 +1,2 @@
+source_labware,source_slot,source_well,source_height_above_bottom_mm,destination_labware,destination_slot,destination_well,volume_μl
+nest_96_wellplate_100ul_pcr_full_skirt,C1,A1,11,nest_96_wellplate_100ul_pcr_full_skirt,D2,A1,11

@@ -164,3 +164,4 @@ cython_debug/
 .env
 .vscode
 your_paths.py
+.python-version

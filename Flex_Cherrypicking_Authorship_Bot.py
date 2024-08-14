@@ -33,27 +33,27 @@ def add_parameters(parameters):
         variable_name="pipette_and_tips",
         choices=[
             {
-                "display_name": "50s w/ standard tips",
+                "display_name": "50 s w/ standard tips",
                 "value": "flex_1channel_50,opentrons_flex_96_tiprack_50ul",
             },
             {
-                "display_name": "50s w/ filter tips",
+                "display_name": "50 s w/ filter tips",
                 "value": "flex_1channel_50,opentrons_flex_96_filtertiprack_50ul",
             },
             {
-                "display_name": "1000s w/ standard 200 tips",
+                "display_name": "1000 s w/ standard 200 tips",
                 "value": "flex_1channel_1000,opentrons_flex_96_tiprack_200ul",
             },
             {
-                "display_name": "1000s w/ filter 200 tips",
+                "display_name": "1000 s w/ filter 200 tips",
                 "value": "flex_1channel_1000,opentrons_flex_96_filtertiprack_200ul",
             },
             {
-                "display_name": "1000s w/ standard 1000 tips",
+                "display_name": "1000 s w/ standard 1000 tips",
                 "value": "flex_1channel_1000,opentrons_flex_96_tiprack_1000ul",
             },
             {
-                "display_name": "1000s w/ filter 1000 tips",
+                "display_name": "1000 s w/ filter 1000 tips",
                 "value": "flex_1channel_1000,opentrons_flex_96_filtertiprack_1000ul",
             },
         ],
@@ -205,6 +205,9 @@ def run(ctx: protocol_api.ProtocolContext):
 
     # load trash
     trash = ctx.load_trash_bin(TRASH_LOCATION)
+    thermocycler = ctx.load_module("thermocycler module gen2")
+    tempdeck1 = ctx.load_module("temperature module gen2", "D1")
+    tempdeck2 = ctx.load_module("temperature module gen2", "D3")
 
     # read the transfer information from the csv
     transfers = read_transfers_from_list(cherrypicking_sequence)
@@ -214,13 +217,14 @@ def run(ctx: protocol_api.ProtocolContext):
     for labware_slot in unique_labware_slots:
         ctx.load_labware(labware_slot.labware, labware_slot.slot)
 
-    # load tipracks
-    tipracks = []
+    # # load tipracks
+    # tipracks = []
 
-    # load tipracks in all slots that are not in use
-    for slot in FLEX_DECK_SLOTS:
-        if not ctx.deck[slot] and slot != TRASH_LOCATION:
-            tipracks.append(ctx.load_labware(tip_type, slot))
+    # # load tipracks in all slots that are not in use
+    # for slot in FLEX_DECK_SLOTS:
+    #     if not ctx.deck[slot] and slot != TRASH_LOCATION:
+    #         tipracks.append(ctx.load_labware(tip_type, slot))
+    tipracks = [ctx.load_labware(tip_type, "B3")]
 
     # load pipette
     pipette = ctx.load_instrument(pipette_type, pipette_mount, tip_racks=tipracks)

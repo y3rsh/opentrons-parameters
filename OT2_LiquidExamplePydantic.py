@@ -66,7 +66,9 @@ class LiquidDestinations:
 
     def add_destination(self, destination: LiquidDestination) -> None:
         # has this destination already been added?
-        liquids_in_same_slot = [d for d in self.destinations if d.key == destination.key]
+        liquids_in_same_slot = [
+            d for d in self.destinations if d.key == destination.key
+        ]
 
         # Check for overlapping wells with previously added destinations
         if liquids_in_same_slot:
@@ -82,11 +84,11 @@ class LiquidDestinations:
     def get_destinations(self) -> List[LiquidDestination]:
         return self.destinations
 
-    def parse_list_of_lists(
-        self, data: List[List[str]]
-    ) -> None:
+    def parse_list_of_lists(self, data: List[List[str]]) -> None:
         if not data or not isinstance(data, list) or len(data) < 2:
-            data_error = "Data must be a non-empty list of lists with at least two rows."
+            data_error = (
+                "Data must be a non-empty list of lists with at least two rows."
+            )
             self.ctx.comment(data_error)
             raise ValueError(data_error)
 
@@ -107,7 +109,9 @@ class LiquidDestinations:
         if unexpected_headers or missing_headers:
             error_message = ""
             if unexpected_headers:
-                error_message += f"Unexpected headers: {', '.join(unexpected_headers)}. "
+                error_message += (
+                    f"Unexpected headers: {', '.join(unexpected_headers)}. "
+                )
             if missing_headers:
                 error_message += f"Missing headers: {', '.join(missing_headers)}."
             self.ctx.comment(error_message)
