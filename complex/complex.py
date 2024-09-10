@@ -112,8 +112,6 @@ def validate_data_rows(data_rows):
                 raise ValueError(error)
 
 
-
-
 def read_liquid_class_config_from_list(
     data: List[List[Union[str, int, float]]]
 ) -> List[LiquidClassConfig]:

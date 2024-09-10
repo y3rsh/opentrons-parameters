@@ -1,23 +1,21 @@
-import csv
-import os
+from pathlib import Path
 import zipfile
 
 # Define directory and create it if it doesn't exist
-output_dir = "csv_files"
-os.makedirs(output_dir, exist_ok=True)
+output_dir = Path("../example_data/csv_files")
+output_dir.mkdir(parents=True, exist_ok=True)
 
 # Generate 50 CSV files
 for i in range(1, 52):
     filename = f"csv_file_{i}.csv"
-    file_path = os.path.join(output_dir, filename)
-    # Write the filename (without .csv extension) to the file
-    with open(file_path, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow([f"csv_file_{i}"])
+    file_path = output_dir / filename
+    # Write the filename with single double quotes around it
+    with file_path.open(mode="w", newline="") as file:
+        file.write(f'"csv_file_{i}"\n')  # Manually write the line with double quotes
 
 # Create a ZIP file
-zip_filename = "csv_files.zip"
+zip_filename = Path("../example_data/csv_files.zip")
 with zipfile.ZipFile(zip_filename, "w") as zip_file:
-    for root, dirs, files in os.walk(output_dir):
-        for file_name in files:
-            zip_file.write(os.path.join(root, file_name), file_name)
+    for file_path in output_dir.iterdir():
+        if file_path.is_file():
+            zip_file.write(file_path, file_path.name)
