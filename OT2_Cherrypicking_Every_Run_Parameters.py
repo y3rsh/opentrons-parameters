@@ -162,13 +162,19 @@ OT2_DECK_LOCATIONS = [
 ]
 
 
+def print_output_of_parse_as_csv(data, ctx):
+    for index, row in enumerate(data):
+        ctx.comment(f"Row {index}:")
+        ctx.comment(f"{', '.join([item for item in row])}")
+
+
 def run(ctx: protocol_api.ProtocolContext):
 
     # Get the values from the RTPs
     pipette_mount = ctx.params.pipette_mount
     tip_reuse = ctx.params.tip_reuse
     cherrypicking_sequence = ctx.params.cherrypicking_sequence.parse_as_csv()
-
+    print_output_of_parse_as_csv(cherrypicking_sequence, ctx)
     # read the transfer information from the csv
     transfers = read_transfers_from_list(cherrypicking_sequence)
 
