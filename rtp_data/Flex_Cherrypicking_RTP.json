@@ -1,0 +1,5 @@
+{
+    "pipette_and_tips": "flex_1channel_50,opentrons_flex_96_tiprack_50ul",
+    "pipette_mount": "left",
+    "tip_reuse": "always"
+}
